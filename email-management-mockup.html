@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            padding: 0 20px 30px;
+            font-size: 24px;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+            flex: 1;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active {
+            background: #3498db;
+            border-left: 4px solid #2980b9;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #2c3e50;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .card-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        /* Overview Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .stat-card.success {
+            border-left-color: #27ae60;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f39c12;
+        }
+
+        .stat-card.danger {
+            border-left-color: #e74c3c;
+        }
+
+        /* Activity List */
+        .activity-list {
+            list-style: none;
+        }
+
+        .activity-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ecf0f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 13px;
+            color: #95a5a6;
+        }
+
+        /* Newsletter Page Specific */
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .drag-drop-area {
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            padding: 60px 40px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .drag-drop-area:hover {
+            background: #e8f4f8;
+            border-color: #2980b9;
+        }
+
+        .drag-drop-area.drag-over {
+            background: #d4e9f7;
+            border-color: #2980b9;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 16px;
+        }
+
+        .drag-drop-text {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .drag-drop-subtext {
+            font-size: 14px;
+            color: #95a5a6;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #dfe6e9;
+            border-radius: 6px;
+            font-size: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+        }
+
+        .uploaded-files {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            color: #e74c3c;
+            font-size: 24px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .file-size {
+            font-size: 13px;
+            color: #95a5a6;
+        }
+
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">📧 MailHub</div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="overview">
+                    <span class="nav-icon">📊</span>
+                    Overview
+                </li>
+                <li class="nav-item" data-page="dashboard">
+                    <span class="nav-icon">⚙️</span>
+                    Dashboard
+                </li>
+                <li class="nav-item" data-page="inbox">
+                    <span class="nav-icon">📥</span>
+                    Inbox
+                </li>
+                <li class="nav-item" data-page="sent">
+                    <span class="nav-icon">📤</span>
+                    Sent
+                </li>
+                <li class="nav-item" data-page="archive">
+                    <span class="nav-icon">📦</span>
+                    Archive
+                </li>
+                <li class="nav-item" data-page="drafts">
+                    <span class="nav-icon">📝</span>
+                    Drafts
+                </li>
+                <li class="nav-item" data-page="trash">
+                    <span class="nav-icon">🗑️</span>
+                    Trash
+                </li>
+                <li class="nav-item" data-page="newsletter">
+                    <span class="nav-icon">📰</span>
+                    Newsletter
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <h1 id="page-title">Overview</h1>
+                <div class="user-profile">
+                    <div class="avatar">JD</div>
+                    <span>John Doe</span>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Overview Page -->
+                <div class="page active" id="overview">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total Emails</h3>
+                            <div class="value">1,247</div>
+                        </div>
+                        <div class="stat-card success">
+                            <h3>Sent Today</h3>
+                            <div class="value">42</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <h3>Unread</h3>
+                            <div class="value">18</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <h3>Drafts</h3>
+                            <div class="value">5</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Quick Actions</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚡</div>
+                            <div class="empty-state-text">Quick actions will appear here</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Recent Activity</div>
+                        <ul class="activity-list">
+                            <li class="activity-item">
+                                <div class="activity-icon">📨</div>
+                                <div class="activity-details">
+                                    <div class="activity-title">New email received from Sarah Johnson</div>
+                                    <div class="activity-time">5 minutes ago</div>
+                                </div>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-icon">📤</div>
+                                <div class="activity-details">
+                                    <div class="activity-title">Sent quarterly report to team</div>
+                                    <div class="activity-time">1 hour ago</div>
+                                </div>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-icon">📦</div>
+                                <div class="activity-details">
+                                    <div class="activity-title">Archived 12 old emails</div>
+                                    <div class="activity-time">3 hours ago</div>
+                                </div>
+                            </li>
+                            <li class="activity-item">
+                                <div class="activity-icon">📝</div>
+                                <div class="activity-details">
+                                    <div class="activity-title">Draft saved: Marketing proposal</div>
+                                    <div class="activity-time">Yesterday</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Email Activity Overview</div>
+                        <div style="height: 200px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 6px;">
+                            <span style="color: #95a5a6;">📈 Chart visualization area</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Page -->
+                <div class="page" id="dashboard">
+                    <div class="card">
+                        <div class="card-header">Account Management & Control</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚙️</div>
+                            <div class="empty-state-text">Dashboard controls will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inbox Page -->
+                <div class="page" id="inbox">
+                    <div class="card">
+                        <div class="card-header">Inbox</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📥</div>
+                            <div class="empty-state-text">Recent emails will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sent Page -->
+                <div class="page" id="sent">
+                    <div class="card">
+                        <div class="card-header">Sent Emails</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📤</div>
+                            <div class="empty-state-text">Sent emails will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archive Page -->
+                <div class="page" id="archive">
+                    <div class="card">
+                        <div class="card-header">Archived Emails</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <div class="empty-state-text">Archived emails will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drafts Page -->
+                <div class="page" id="drafts">
+                    <div class="card">
+                        <div class="card-header">Draft Emails</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <div class="empty-state-text">Draft emails will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trash Page -->
+                <div class="page" id="trash">
+                    <div class="card">
+                        <div class="card-header">Deleted Emails</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🗑️</div>
+                            <div class="empty-state-text">Deleted emails will appear here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Newsletter Page -->
+                <div class="page" id="newsletter">
+                    <div class="card">
+                        <div class="card-header">Upload PDF Documents</div>
+                        <div class="upload-section">
+                            <div class="drag-drop-area" id="dropArea">
+                                <div class="upload-icon">📄</div>
+                                <div class="drag-drop-text">Drag and drop PDF files here</div>
+                                <div class="drag-drop-subtext">or click to browse</div>
+                                <input type="file" id="fileInput" class="file-input" accept=".pdf" multiple>
+                            </div>
+                            <div class="uploaded-files" id="uploadedFiles"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="uploadDestination">Upload Destination</label>
+                            <select class="form-select" id="uploadDestination">
+                                <option value="">Select destination...</option>
+                                <option value="internal">Internal</option>
+                                <option value="internal-aris">Internal + Aris</option>
+                                <option value="internal-celonis">Internal + Celonis</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary">
+                            <span>📤</span>
+                            Upload Files
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Client Base Management</div>
+                        <button class="btn btn-success">
+                            <span>➕</span>
+                            Add New Client Base
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Navigation functionality
+        const navItems = document.querySelectorAll('.nav-item');
+        const pages = document.querySelectorAll('.page');
+        const pageTitle = document.getElementById('page-title');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const pageName = item.getAttribute('data-page');
+                
+                // Update active nav item
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Update active page
+                pages.forEach(page => page.classList.remove('active'));
+                document.getElementById(pageName).classList.add('active');
+                
+                // Update page title
+                pageTitle.textContent = item.textContent.trim();
+            });
+        });
+
+        // Drag and drop functionality
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadedFiles = document.getElementById('uploadedFiles');
+        let files = [];
+
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('drag-over');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('drag-over');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('drag-over');
+            const droppedFiles = Array.from(e.dataTransfer.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            handleFiles(droppedFiles);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+        });
+
+        function handleFiles(newFiles) {
+            files = [...files, ...newFiles];
+            displayFiles();
+        }
+
+        function displayFiles() {
+            uploadedFiles.innerHTML = '';
+            files.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-icon">📄</div>
+                        <div>
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${(file.size / 1024).toFixed(2)} KB</div>
+                        </div>
+                    </div>
+                    <button class="btn-remove" onclick="removeFile(${index})">Remove</button>
+                `;
+                uploadedFiles.appendChild(fileItem);
+            });
+        }
+
+         function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message show ' + type;
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    statusMessage.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        // Upload files to n8n webhook
+        uploadBtn.addEventListener('click', async () => {
+            const webhook = webhookUrl.value.trim();
+            const destination = uploadDestination.value;
+
+            // Validation
+            if (!webhook) {
+                showStatus('❌ Please enter a webhook URL', 'error');
+                return;
+            }
+
+            if (!destination) {
+                showStatus('❌ Please select an upload destination', 'error');
+                return;
+            }
+
+            if (files.length === 0) {
+                showStatus('❌ Please select at least one PDF file', 'error');
+                return;
+            }
+
+            // Disable button during upload
+            uploadBtn.disabled = true;
+            showStatus('⏳ Uploading files to n8n...', 'loading');
+
+            try {
+                // Create FormData to send files
+                const formData = new FormData();
+                
+                // Add files
+                files.forEach((file, index) => {
+                    formData.append('files', file);
+                });
+                
+                // Add destination
+                formData.append('destination', destination);
+                
+                // Add metadata
+                formData.append('uploadedBy', 'John Doe');
+                formData.append('uploadDate', new Date().toISOString());
+                formData.append('fileCount', files.length);
+
+                // Send to n8n webhook
+                const response = await fetch(webhook, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('✅ Successfully uploaded ' + files.length + ' file(s) to ' + destination, 'success');
+                    
+                    // Clear files after successful upload
+                    files = [];
+                    displayFiles();
+                    uploadDestination.value = '';
+                    
+                    console.log('Upload response:', result);
+                } else {
+                    throw new Error('Upload failed: ' + response.statusText);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('❌ Upload failed: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        });
+
+        // Add Client Base button (sends to webhook)
+        addClientBtn.addEventListener('click', async () => {
+            const webhook = webhookUrl.value.trim();
+
+            if (!webhook) {
+                showStatus('❌ Please enter a webhook URL first', 'error');
+                return;
+            }
+
+            addClientBtn.disabled = true;
+            showStatus('⏳ Adding new client base...', 'loading');
+
+            try {
+                const response = await fetch(webhook, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'add_client_base',
+                        timestamp: new Date().toISOString(),
+                        requestedBy: 'John Doe'
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('✅ New client base request sent successfully', 'success');
+                    console.log('Client base response:', result);
+                } else {
+                    throw new Error('Request failed: ' + response.statusText);
+                }
+            } catch (error) {
+                console.error('Client base error:', error);
+                showStatus('❌ Request failed: ' + error.message, 'error');
+            } finally {
+                addClientBtn.disabled = false;
+            }
+        });
+
+        // Save webhook URL to localStorage
+        webhookUrl.addEventListener('change', () => {
+            localStorage.setItem('https://n8n.sofiatechnology.ai/webhook-test/file-upload', webhookUrl.value);
+        });
+
+        // Load saved webhook URL
+        const savedWebhook = localStorage.getItem('https://n8n.sofiatechnology.ai/webhook-test/file-upload');
+        if (savedWebhook) {
+            webhookUrl.value = savedWebhook;
+        }
+    </script>
+</body>
+</html>
