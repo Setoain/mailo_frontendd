@@ -282,6 +282,7 @@
             color: #2c3e50;
         }
 
+        .form-input,
         .form-select {
             width: 100%;
             padding: 12px 16px;
@@ -289,10 +290,14 @@
             border-radius: 6px;
             font-size: 15px;
             background: white;
-            cursor: pointer;
             transition: all 0.3s;
         }
 
+        .form-select {
+            cursor: pointer;
+        }
+
+        .form-input:focus,
         .form-select:focus {
             outline: none;
             border-color: #3498db;
@@ -312,12 +317,17 @@
             gap: 8px;
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .btn-primary {
             background: #3498db;
             color: white;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: #2980b9;
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
@@ -328,7 +338,7 @@
             color: white;
         }
 
-        .btn-success:hover {
+        .btn-success:hover:not(:disabled) {
             background: #229954;
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
@@ -398,9 +408,50 @@
         .empty-state-text {
             font-size: 18px;
         }
+
+        /* Status Message */
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 6px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .status-message.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .status-message.success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .status-message.error {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .status-message.loading {
+            background: #3498db;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message"></div>
+
     <div class="container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -592,6 +643,19 @@
                 <!-- Newsletter Page -->
                 <div class="page" id="newsletter">
                     <div class="card">
+                        <div class="card-header">Webhook Configuration</div>
+                        <div class="form-group">
+                            <label class="form-label" for="webhookUrl">n8n Webhook URL</label>
+                            <input 
+                                type="url" 
+                                id="webhookUrl" 
+                                class="form-input" 
+                                placeholder="https://n8n.example.com/webhook/your-endpoint"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="card">
                         <div class="card-header">Upload PDF Documents</div>
                         <div class="upload-section">
                             <div class="drag-drop-area" id="dropArea">
@@ -613,7 +677,7 @@
                             </select>
                         </div>
 
-                        <button class="btn btn-primary">
+                        <button class="btn btn-primary" id="uploadBtn">
                             <span>📤</span>
                             Upload Files
                         </button>
@@ -621,7 +685,7 @@
 
                     <div class="card">
                         <div class="card-header">Client Base Management</div>
-                        <button class="btn btn-success">
+                        <button class="btn btn-success" id="addClientBtn">
                             <span>➕</span>
                             Add New Client Base
                         </button>
@@ -632,11 +696,22 @@
     </div>
 
     <script>
-        // Navigation functionality
+        // Get all necessary DOM elements
         const navItems = document.querySelectorAll('.nav-item');
         const pages = document.querySelectorAll('.page');
         const pageTitle = document.getElementById('page-title');
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadedFiles = document.getElementById('uploadedFiles');
+        const uploadDestination = document.getElementById('uploadDestination');
+        const webhookUrl = document.getElementById('webhookUrl');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const addClientBtn = document.getElementById('addClientBtn');
+        const statusMessage = document.getElementById('statusMessage');
 
+        let files = [];
+
+        // Navigation functionality
         navItems.forEach(item => {
             item.addEventListener('click', () => {
                 const pageName = item.getAttribute('data-page');
@@ -655,11 +730,6 @@
         });
 
         // Drag and drop functionality
-        const dropArea = document.getElementById('dropArea');
-        const fileInput = document.getElementById('fileInput');
-        const uploadedFiles = document.getElementById('uploadedFiles');
-        let files = [];
-
         dropArea.addEventListener('click', () => fileInput.click());
 
         dropArea.addEventListener('dragover', (e) => {
@@ -708,7 +778,12 @@
             });
         }
 
-         function showStatus(message, type) {
+        function removeFile(index) {
+            files.splice(index, 1);
+            displayFiles();
+        }
+
+        function showStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.className = 'status-message show ' + type;
             
@@ -830,11 +905,11 @@
 
         // Save webhook URL to localStorage
         webhookUrl.addEventListener('change', () => {
-            localStorage.setItem('https://n8n.sofiatechnology.ai/webhook-test/file-upload', webhookUrl.value);
+            localStorage.setItem('n8n-webhook-url', webhookUrl.value);
         });
 
-        // Load saved webhook URL
-        const savedWebhook = localStorage.getItem('https://n8n.sofiatechnology.ai/webhook-test/file-upload');
+        // Load saved webhook URL on page load
+        const savedWebhook = localStorage.getItem('n8n-webhook-url');
         if (savedWebhook) {
             webhookUrl.value = savedWebhook;
         }
