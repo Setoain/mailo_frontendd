@@ -985,6 +985,7 @@
                     
                     // Clear files and checkboxes after successful upload
                     files = [];
+                    fileInput.value = '';
                     displayFiles();
                     destinationCheckboxes.forEach(cb => {
                         cb.checked = false;
