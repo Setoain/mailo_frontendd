@@ -905,11 +905,11 @@
 
         // Save webhook URL to localStorage
         webhookUrl.addEventListener('change', () => {
-            localStorage.setItem('https://n8n.sofiatechnology.ai/webhook-test/26cc4a64-5129-4d4f-803e-a3cb6d5dd513', webhookUrl.value);
+            localStorage.setItem('https://n8n.sofiatechnology.ai/webhook/26cc4a64-5129-4d4f-803e-a3cb6d5dd513', webhookUrl.value);
         });
 
         // Load saved webhook URL on page load
-        const savedWebhook = localStorage.getItem('https://n8n.sofiatechnology.ai/webhook-test/26cc4a64-5129-4d4f-803e-a3cb6d5dd513');
+        const savedWebhook = localStorage.getItem('https://n8n.sofiatechnology.ai/webhook/26cc4a64-5129-4d4f-803e-a3cb6d5dd513');
         if (savedWebhook) {
             webhookUrl.value = savedWebhook;
         }
