@@ -815,7 +815,10 @@
                 
                 // Update active page
                 pages.forEach(page => page.classList.remove('active'));
-                document.getElementById(pageName).classList.add('active');
+                const target = document.getElementById(pageName);
+                if (target) {
+                    target.classList.add('active');
+                }
                 
                 // Update page title
                 pageTitle.textContent = item.textContent.trim();
@@ -869,17 +872,6 @@
         // Drag and drop functionality
         dropArea.addEventListener('click', () => fileInput.click());
 
-      ;
-        // Create new File with explicit options
-        return new File([file], newFileName, { 
-            type: file.type,
-            lastModified: file.lastModified
-        });
-    });
-    files = [...files, ...renamedFiles];
-    displayFiles();
-}
-
         dropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropArea.classList.add('drag-over');
@@ -893,39 +885,56 @@
             e.preventDefault();
             dropArea.classList.remove('drag-over');
             const droppedFiles = Array.from(e.dataTransfer.files).filter(file => 
-                file.type === 'application/pdf'
+                file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
             );
             handleFiles(droppedFiles);
         });
 
         fileInput.addEventListener('change', (e) => {
-            handleFiles(Array.from(e.target.files));
+            handleFiles(Array.from(e.target.files).filter(f => 
+                f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+            ));
+            // reset input so same file can be selected again if removed later
+            e.target.value = '';
         });
 
+        // Rename files to include Month-Year suffix and add to files list
         function handleFiles(newFiles) {
-            const now = new Date();
-            const month = now.toLocaleString('en-US', { month: 'long' });
-            const year = now.getFullYear();
-        
-            const renamedFiles = newFiles.map((file) => {
-                const lastDot = file.name.lastIndexOf('.');
-                const baseName = lastDot !== -1 ? file.name.slice(0, lastDot) : file.name;
-                const extension = lastDot !== -1 ? file.name.slice(lastDot) : '';
-            
-                const newFileName = `${baseName}${month}-${year}${extension}`;
-            
-                return new File([file], newFileName, {
-                  type: file.type,
-                  lastModified: file.lastModified,
-                });
-            });
-            files = [...files, ...renamedFiles];
-            displayFiles();
-        }
+          if (!newFiles || newFiles.length === 0) return;
 
+          const now = new Date();
+          const month = now.toLocaleString('en-US', { month: 'long' });
+          const year = now.getFullYear();
+
+          const renamedFiles = newFiles.map((file) => {
+            // Build new filename: originalBaseName + Month-Year + extension
+            const lastDot = file.name.lastIndexOf('.');
+            const baseName = lastDot !== -1 ? file.name.slice(0, lastDot) : file.name;
+            const extension = lastDot !== -1 ? file.name.slice(lastDot) : '';
+            const newFileName = `${baseName}${month}-${year}${extension}`;
+
+            // Create a new File object with the new name (modern browsers)
+            try {
+              return new File([file], newFileName, {
+                type: file.type || 'application/pdf',
+                lastModified: file.lastModified || Date.now(),
+              });
+            } catch (err) {
+              // If File constructor is not available (very old browsers), fall back to original file
+              return file;
+            }
+          });
+
+          files = [...files, ...renamedFiles];
+          displayFiles();
+        }
 
         function displayFiles() {
             uploadedFiles.innerHTML = '';
+            if (files.length === 0) {
+                uploadedFiles.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No files selected</div></div>';
+                return;
+            }
             files.forEach((file, index) => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
@@ -933,19 +942,29 @@
                     <div class="file-info">
                         <div class="file-icon">📄</div>
                         <div>
-                            <div class="file-name">${file.name}</div>
+                            <div class="file-name">${escapeHtml(file.name)}</div>
                             <div class="file-size">${(file.size / 1024).toFixed(2)} KB</div>
                         </div>
                     </div>
-                    <button class="btn-remove" onclick="removeFile(${index})">Remove</button>
+                    <button class="btn-remove" data-index="${index}">Remove</button>
                 `;
                 uploadedFiles.appendChild(fileItem);
+            });
+
+            // Attach remove handlers (use event delegation)
+            uploadedFiles.querySelectorAll('.btn-remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = Number(btn.getAttribute('data-index'));
+                    removeFile(idx);
+                });
             });
         }
 
         function removeFile(index) {
-            files.splice(index, 1);
-            displayFiles();
+            if (index >= 0 && index < files.length) {
+                files.splice(index, 1);
+                displayFiles();
+            }
         }
 
         function showStatus(message, type) {
@@ -957,6 +976,16 @@
                     statusMessage.classList.remove('show');
                 }, 5000);
             }
+        }
+
+        // Simple HTML escape to avoid injection into file list
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
         // Upload files to n8n webhook
@@ -990,98 +1019,46 @@
                 
                 // Add files
                 files.forEach((file, index) => {
-                    formData.append('files', file);
+                    // using 'files[]' to indicate multiple files (common convention)
+                    formData.append('files[]', file, file.name);
                 });
-                
-                // Add destinations as JSON array
-                formData.append('destinations', JSON.stringify(destinations));
-                
-                // Add metadata
-                formData.append('uploadedBy', 'John Doe');
-                formData.append('uploadDate', new Date().toISOString());
-                formData.append('fileCount', files.length);
 
-                // Send to n8n webhook
+                // Add destinations and any other metadata
+                formData.append('destinations', JSON.stringify(destinations));
+                formData.append('timestamp', new Date().toISOString());
+
                 const response = await fetch(webhook, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
                 });
 
-                if (response.ok) {
-                    const result = await response.json();
-                    showStatus('✅ Successfully uploaded ' + files.length + ' file(s) to: ' + destinations.join(', '), 'success');
-                    
-                    // Clear files and checkboxes after successful upload
-                    files = [];
-                    fileInput.value = '';
-                    displayFiles();
-                    destinationCheckboxes.forEach(cb => {
-                        cb.checked = false;
-                        cb.dispatchEvent(new Event('change'));
-                    });
-                    
-                    console.log('Upload response:', result);
-                } else {
-                    throw new Error('Upload failed: ' + response.statusText);
+                if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`Upload failed (${response.status}) ${text}`);
                 }
+
+                showStatus('✅ Files uploaded successfully', 'success');
+                // Clear files after successful upload
+                files = [];
+                displayFiles();
             } catch (error) {
-                console.error('Upload error:', error);
-                showStatus('❌ Upload failed: ' + error.message, 'error');
+                console.error(error);
+                showStatus('❌ Upload failed: ' + (error.message || 'Unknown error'), 'error');
             } finally {
                 uploadBtn.disabled = false;
             }
         });
 
-        // Add Client Base button (sends to webhook)
-        addClientBtn.addEventListener('click', async () => {
-            const webhook = webhookUrl.value.trim();
-
-            if (!webhook) {
-                showStatus('❌ Please enter a webhook URL first', 'error');
-                return;
-            }
-
-            addClientBtn.disabled = true;
-            showStatus('⏳ Adding new client base...', 'loading');
-
-            try {
-                const response = await fetch(webhook, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'add_client_base',
-                        timestamp: new Date().toISOString(),
-                        requestedBy: 'John Doe'
-                    })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    showStatus('✅ New client base request sent successfully', 'success');
-                    console.log('Client base response:', result);
-                } else {
-                    throw new Error('Request failed: ' + response.statusText);
-                }
-            } catch (error) {
-                console.error('Client base error:', error);
-                showStatus('❌ Request failed: ' + error.message, 'error');
-            } finally {
-                addClientBtn.disabled = false;
-            }
+        // Add client button demo handler
+        addClientBtn.addEventListener('click', () => {
+            showStatus('➕ Add client flow not implemented in demo', 'loading');
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 2000);
         });
 
-        // Save webhook URL to localStorage
-        webhookUrl.addEventListener('change', () => {
-            localStorage.setItem('https://n8n.sofiatechnology.ai/webhook-test/26cc4a64-5129-4d4f-803e-a3cb6d5dd513', webhookUrl.value);
-        });
-
-        // Load saved webhook URL on page load
-        const savedWebhook = localStorage.getItem('https://n8n.sofiatechnology.ai/webhook-test/26cc4a64-5129-4d4f-803e-a3cb6d5dd513');
-        if (savedWebhook) {
-            webhookUrl.value = savedWebhook;
-        }
+        // Initialize display
+        displayFiles();
     </script>
 </body>
 </html>
