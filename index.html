@@ -869,6 +869,17 @@
         // Drag and drop functionality
         dropArea.addEventListener('click', () => fileInput.click());
 
+      ;
+        // Create new File with explicit options
+        return new File([file], newFileName, { 
+            type: file.type,
+            lastModified: file.lastModified
+        });
+    });
+    files = [...files, ...renamedFiles];
+    displayFiles();
+}
+
         dropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropArea.classList.add('drag-over');
@@ -892,9 +903,23 @@
         });
 
         function handleFiles(newFiles) {
-            files = [...files, ...newFiles];
-            displayFiles();
-        }
+            const now = new Date();
+            const month = now.toLocaleString('en-US', { month: 'long' });
+            const year = now.getFullYear();
+            const renamedFiles = newFiles.map(file => {
+                const lastDot = file.name.lastIndexOf('.');
+                const baseName = lastDot !== -1 ? file.name.slice(0, lastDot) : file.name;
+                const extension = lastDot !== -1 ? file.name.slice(lastDot) : '';
+                const newFileName = `${baseName}${month}-${year}${extension}`;
+            return new File([file], newFileName, { type: file.type });
+  });
+
+  files = [...files, ...renamedFiles];
+  displayFiles();
+}
+
+          function handleFiles(newFiles) {
+       
 
         function displayFiles() {
             uploadedFiles.innerHTML = '';
