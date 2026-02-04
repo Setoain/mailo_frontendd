@@ -892,24 +892,7 @@
         });
 
         function handleFiles(newFiles) {
-            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const currentMonth = monthNames[new Date().getMonth()];
-            
-            const renamedFiles = newFiles.map(file => {
-                const nameParts = file.name.split('.');
-                const extension = nameParts.pop();
-                const baseName = nameParts.join('.');
-                const newFileName = `${baseName} (${currentMonth}).${extension}`;
-                
-                // Create new File with explicit options
-                return new File([file], newFileName, { 
-                    type: file.type,
-                    lastModified: file.lastModified
-                });
-            });
-            
-            files = [...files, ...renamedFiles];
+            files = [...files, ...newFiles];
             displayFiles();
         }
 
